@@ -31,7 +31,7 @@ public class GameManager : MonoBehaviour
 
         NodeMatrix = new Node[Size, Size];
         CreateNodes();
-        CalculateNodes();
+        StartCoroutine(AStarCoroutine());
     }
 
     public void CreateNodes()
@@ -113,11 +113,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void CalculateNodes()
-    {
-        StartCoroutine(AStarCoroutine());
-    }
-
     private IEnumerator AStarCoroutine()
     {
         List<Node> openList = new List<Node>();
@@ -148,24 +143,22 @@ public class GameManager : MonoBehaviour
             {
                 int index = currentNode.PositionX * Size + currentNode.PositionY;
                 nodeObjects[index].GetComponent<SpriteRenderer>().color = Color.yellow;
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(0.1f);
             }
 
             if (currentNode == endNode)
             {
-                RetracePath(startNode, endNode);
+                DebugLists(openList, closedList);
+                yield return StartCoroutine(RetracePath(startNode, endNode));
                 yield break;
             }
 
             foreach (Way way in currentNode.WayList)
             {
                 Node neighbor = way.NodeDestiny;
-
-                if (closedList.Contains(neighbor))
-                    continue;
+                if (closedList.Contains(neighbor)) continue;
 
                 float tentativeGCost = currentNode.GCost + way.Cost;
-
                 if (!openList.Contains(neighbor) || tentativeGCost < neighbor.GCost)
                 {
                     neighbor.GCost = tentativeGCost;
@@ -173,13 +166,39 @@ public class GameManager : MonoBehaviour
                     neighbor.NodeParent = currentNode;
 
                     if (!openList.Contains(neighbor))
+                    {
                         openList.Add(neighbor);
+
+                        if (neighbor != endNode)
+                        {
+                            int index = neighbor.PositionX * Size + neighbor.PositionY;
+                            nodeObjects[index].GetComponent<SpriteRenderer>().color = Color.yellow;
+                            yield return new WaitForSeconds(0.1f);
+                        }
+                    }
                 }
             }
         }
     }
 
-    private void RetracePath(Node startNode, Node endNode)
+    private void DebugLists(List<Node> openList, List<Node> closedList)
+    {
+        string openNodes = "Open List: ";
+        foreach (Node node in openList)
+        {
+            openNodes += $"({node.PositionX}, {node.PositionY}) ";
+        }
+        Debug.Log(openNodes);
+
+        string closedNodes = "Closed List: ";
+        foreach (Node node in closedList)
+        {
+            closedNodes += $"({node.PositionX}, {node.PositionY}) ";
+        }
+        Debug.Log(closedNodes);
+    }
+
+    private IEnumerator RetracePath(Node startNode, Node endNode)
     {
         List<Node> path = new List<Node>();
         Node currentNode = endNode;
@@ -197,6 +216,7 @@ public class GameManager : MonoBehaviour
             {
                 int index = node.PositionX * Size + node.PositionY;
                 nodeObjects[index].GetComponent<SpriteRenderer>().color = Color.green;
+                yield return new WaitForSeconds(0.1f);
             }
         }
     }
